@@ -1,0 +1,45 @@
+===========================================================
+  COMMANDS EXECUTED - Question 3: File System and Link Analysis
+===========================================================
+
+# --- Step 1: Create Original File ---
+echo "This is the original file content for testing." > original.txt
+cat original.txt
+
+# --- Step 2: Create Hard Link ---
+ln original.txt hardlink.txt
+
+# --- Step 3: Create Symbolic Link ---
+ln -s original.txt symlink.txt
+
+# --- Step 4: View Inode Numbers ---
+ls -li
+ls -li original.txt hardlink.txt symlink.txt
+
+# --- Step 5: Read All Three Files ---
+cat original.txt
+cat hardlink.txt
+cat symlink.txt
+
+# --- Step 6: Identify File Types ---
+file original.txt hardlink.txt symlink.txt
+
+# --- Step 7: Collect Metadata ---
+stat original.txt
+stat hardlink.txt
+stat symlink.txt
+readlink symlink.txt
+
+# --- Step 8: Delete Original and Observe ---
+rm original.txt
+ls -li
+cat hardlink.txt
+cat symlink.txt
+
+# --- Step 9: Stat After Deletion ---
+stat hardlink.txt
+
+# --- Step 10: Create Report using vi ---
+vi Link_Analysis_Report.txt
+
+===========================================================

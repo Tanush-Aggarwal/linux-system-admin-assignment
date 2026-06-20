@@ -1,0 +1,27 @@
+student
+uid=1000(student) gid=1000(student) groups=1000(student),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),120(lpadmin),132(lxd),133(sambashare)
+student adm cdrom sudo dip plugdev lpadmin lxd sambashare
+/bin/bash
+student:x:1000:1000:Student User,,,:/home/student:/bin/bash
+/home/student
+/home/student
+total 48
+drwxr-xr-x  8 student student 4096 Jun 15 10:32 .
+drwxr-xr-x  3 root    root    4096 Jun 10 09:00 ..
+-rw-------  1 student student  789 Jun 15 10:31 .bash_history
+-rw-r--r--  1 student student  220 Jun 10 09:00 .bash_logout
+-rw-r--r--  1 student student 3526 Jun 10 09:00 .bashrc
+drwx------  2 student student 4096 Jun 10 09:05 .cache
+drwxr-xr-x  3 student student 4096 Jun 14 14:20 .local
+-rw-r--r--  1 student student  807 Jun 10 09:00 .profile
+drwxr-xr-x  2 student student 4096 Jun 15 09:55 Documents
+drwxr-xr-x  2 student student 4096 Jun 15 09:55 Downloads
+drwxr-xr-x  2 student student 4096 Jun 15 10:00 project_workspace
+PING google.com (142.250.64.46) 56(84) bytes of data.
+64 bytes from 142.250.64.46: icmp_seq=1 ttl=55 time=12.3 ms
+64 bytes from 142.250.64.46: icmp_seq=2 ttl=55 time=11.8 ms
+64 bytes from 142.250.64.46: icmp_seq=3 ttl=55 time=12.1 ms
+64 bytes from 142.250.64.46: icmp_seq=4 ttl=55 time=11.9 ms
+--- google.com ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 11.8/12.0/12.3/0.2 ms

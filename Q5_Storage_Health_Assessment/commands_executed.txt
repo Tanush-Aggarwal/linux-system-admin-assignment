@@ -1,0 +1,39 @@
+===========================================================
+  COMMANDS EXECUTED - Question 5: Storage Health Assessment
+===========================================================
+
+# --- Step 1: List Available Storage Devices ---
+lsblk
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT
+sudo fdisk -l
+sudo blkid
+
+# --- Step 2: View Mounted File Systems ---
+mount | column -t
+cat /etc/fstab
+df -hT
+
+# --- Step 3: Disk Usage Statistics ---
+df -h
+df -h --total
+du -h --max-depth=1 / 2>/dev/null | sort -rh | head -10
+du -sh /var/log
+du -sh /home
+
+# --- Step 4: Inode Utilization ---
+df -i
+df -ih
+
+# --- Step 5: Storage Health Check ---
+sudo smartctl -H /dev/sda
+sudo smartctl -a /dev/sda
+sudo e2fsck -n /dev/sda4
+dmesg | grep -i "I/O error"
+sudo tune2fs -l /dev/sda4 | grep -E "check|count|state"
+
+# --- Step 6: Create Report using vi ---
+vi Storage_Assessment_Report.txt
+  (vi commands used: i=insert, ESC=exit insert, :wq=save+quit,
+   :set nu=line numbers, G=go to end, gg=go to start)
+
+===========================================================

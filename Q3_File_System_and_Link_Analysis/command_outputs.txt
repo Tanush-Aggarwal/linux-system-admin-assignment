@@ -1,0 +1,30 @@
+BEFORE deletion - ls -li:
+total 8
+131073 -rw-r--r-- 2 student student 48 Jun 15 11:00 hardlink.txt
+131073 -rw-r--r-- 2 student student 48 Jun 15 11:00 original.txt
+131098 lrwxrwxrwx 1 student student 12 Jun 15 11:01 symlink.txt -> original.txt
+
+file original.txt hardlink.txt symlink.txt:
+original.txt: ASCII text
+hardlink.txt: ASCII text
+symlink.txt:  symbolic link to original.txt
+
+stat hardlink.txt:
+  File: hardlink.txt
+  Size: 48       Blocks: 8    IO Block: 4096  regular file
+  Device: 801h   Inode: 131073    Links: 2
+  Access: (0644/-rw-r--r--)  Uid: (1000/student)  Gid: (1000/student)
+
+AFTER rm original.txt - ls -li:
+total 4
+131073 -rw-r--r-- 1 student student 48 Jun 15 11:00 hardlink.txt
+131098 lrwxrwxrwx 1 student student 12 Jun 15 11:01 symlink.txt -> original.txt
+
+cat hardlink.txt:
+This is the original file content for testing.
+
+cat symlink.txt:
+cat: symlink.txt: No such file or directory
+
+readlink symlink.txt:
+original.txt

@@ -1,0 +1,48 @@
+===========================================================
+  COMMANDS EXECUTED - Question 2: Secure Project Workspace Setup
+===========================================================
+
+# --- Step 1: Create Directory Structure ---
+mkdir -p ~/project_workspace
+mkdir -p ~/project_workspace/docs
+mkdir -p ~/project_workspace/src
+mkdir -p ~/project_workspace/logs
+mkdir -p ~/project_workspace/config
+touch ~/project_workspace/docs/README.md
+touch ~/project_workspace/config/settings.conf
+touch ~/project_workspace/logs/app.log
+
+# --- Step 2: View Default Permissions (BEFORE) ---
+ls -la ~/project_workspace/
+
+# --- Step 3: Modify Permissions ---
+chmod 750 ~/project_workspace
+chmod 700 ~/project_workspace/config
+chmod 770 ~/project_workspace/src
+chmod 755 ~/project_workspace/docs
+chmod 730 ~/project_workspace/logs
+chmod 640 ~/project_workspace/docs/README.md
+chmod 600 ~/project_workspace/config/settings.conf
+chmod 620 ~/project_workspace/logs/app.log
+
+# --- Step 4: View Modified Permissions (AFTER) ---
+ls -la ~/project_workspace/
+
+# --- Step 5: Change Ownership ---
+sudo chown student:devteam ~/project_workspace/src
+sudo chown student:devteam ~/project_workspace/logs
+sudo chown root:student ~/project_workspace/config
+
+# --- Step 6: Set Umask ---
+umask
+umask 027
+umask
+touch testfile
+mkdir testdir
+ls -la testfile testdir
+
+# --- Step 7: Create Report using vi ---
+vi Project_Workspace_Report.txt
+  (Inside vi: 'i' = insert, ESC = exit insert, :wq = save & quit)
+
+===========================================================

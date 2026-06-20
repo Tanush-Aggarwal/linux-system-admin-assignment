@@ -1,0 +1,27 @@
+lsof -p $$ output:
+COMMAND  PID     USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME
+bash    1234 student  cwd    DIR    8,1     4096  131072 /home/student
+bash    1234 student  rtd    DIR    8,1     4096       2 /
+bash    1234 student  txt    REG    8,1  1037528  524289 /bin/bash
+bash    1234 student    0u   CHR  136,0      0t0       3 /dev/pts/0
+bash    1234 student    1u   CHR  136,0      0t0       3 /dev/pts/0
+bash    1234 student    2u   CHR  136,0      0t0       3 /dev/pts/0
+
+ls -la /proc/$$/fd output:
+lrwx------ 1 student student 64 0 -> /dev/pts/0
+lrwx------ 1 student student 64 1 -> /dev/pts/0
+lrwx------ 1 student student 64 2 -> /dev/pts/0
+
+Redirection tests:
+  ls /home > output.txt       → output.txt contains: student
+  echo "New" >> output.txt    → appends to file
+  ls /bad 2> errors.txt       → errors.txt: ls: cannot access '/bad'
+  ls /home /bad > all 2>&1    → both stdout+stderr in one file
+
+ulimit -a output:
+  open files  (-n)  1024
+  max user processes (-u) 15530
+  virtual memory (-v) unlimited
+
+cat /proc/sys/fs/file-max:
+  2097152

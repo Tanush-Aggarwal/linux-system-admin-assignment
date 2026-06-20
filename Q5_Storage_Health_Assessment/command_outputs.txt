@@ -1,0 +1,43 @@
+lsblk output:
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda      8:0    0   50G  0 disk
+├─sda1   8:1    0    1M  0 part
+├─sda2   8:2    0  512M  0 part /boot/efi
+├─sda3   8:3    0    2G  0 part /boot
+└─sda4   8:4    0 47.5G  0 part /
+sdb      8:16   0  100G  0 disk
+└─sdb1   8:17   0  100G  0 part /data
+sr0     11:0    1 1024M  0 rom
+
+df -h output:
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda4        47G   18G   27G  40% /
+/dev/sda3       1.9G  201M  1.6G  12% /boot
+/dev/sda2       511M  5.8M  505M   2% /boot/efi
+/dev/sdb1        99G   23G   71G  24% /data
+tmpfs           1.9G  1.2M  1.9G   1% /run
+tmpfs           7.8G     0  7.8G   0% /dev/shm
+
+df -i output:
+Filesystem      Inodes  IUsed   IFree IUse% Mounted on
+/dev/sda4      3145728 187293 2958435    6% /
+/dev/sda3       131072   1024  130048    1% /boot
+/dev/sdb1      6553600 234567 6319033    4% /data
+
+du --max-depth=1 / output:
+18G    /
+8.2G   /usr
+4.1G   /var
+2.3G   /home
+1.8G   /opt
+980M   /lib
+456M   /boot
+234M   /etc
+
+smartctl -H /dev/sda:
+SMART overall-health self-assessment test result: PASSED
+
+tune2fs -l /dev/sda4:
+Filesystem state: clean
+Mount count:      47
+Last checked:     Sun Jun  8 09:15:22 2026

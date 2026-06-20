@@ -1,0 +1,18 @@
+STORAGE ASSESSMENT - QUICK REFERENCE
+=====================================
+Date: June 2026
+Server: app-server-01
+Assessed by: student
+
+DISK SUMMARY:
+  sda (50GB) - OS disk   → 40% used → HEALTHY
+  sdb (100GB) - Data disk → 24% used → HEALTHY
+
+HEALTH STATUS: PASSED (smartctl)
+FILESYSTEM STATE: clean (e2fsck)
+INODE USAGE: 6% on root → HEALTHY
+
+ACTION ITEMS:
+  1. Configure logrotate for /var/log (1.2GB used)
+  2. Set up disk monitoring cron job
+  3. Consider LVM for future flexibility

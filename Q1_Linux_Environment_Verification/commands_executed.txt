@@ -1,0 +1,35 @@
+===========================================================
+  COMMANDS EXECUTED - Question 1: Linux Environment Verification
+===========================================================
+
+All commands run in sequence during the lab session:
+
+# --- Step 1: Username and Groups ---
+whoami
+id
+groups
+
+# --- Step 2: Current Shell ---
+echo $SHELL
+cat /etc/passwd | grep student
+
+# --- Step 3: Current Working Directory ---
+pwd
+echo $HOME
+
+# --- Step 4: List Files and Directories ---
+ls -la
+ls -la /home/student
+
+# --- Step 5: Network Connectivity ---
+ping -c 4 google.com
+ip addr show
+ifconfig
+
+# --- Step 6: Creating the Report using vi ---
+vi Environment_Report.txt
+  (Inside vi: press 'i' to enter INSERT mode, type content, press ESC, type :wq to save)
+
+cat Environment_Report.txt
+
+===========================================================

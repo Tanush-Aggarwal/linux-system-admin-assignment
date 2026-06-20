@@ -1,0 +1,58 @@
+===========================================================
+  COMMANDS EXECUTED - Question 4: File Access and I/O Investigation
+===========================================================
+
+# --- Step 1: Identify Open Files ---
+lsof
+lsof -p $$
+lsof -u student
+lsof /var/log/syslog
+
+# --- Step 2: Examine File Descriptors ---
+ls -la /proc/$$/fd
+echo $$ 
+
+# --- Step 3: Open a Custom File Descriptor ---
+exec 3> /tmp/mylog.txt
+echo "Custom log entry" >&3
+exec 3>&-
+cat /tmp/mylog.txt
+
+# --- Step 4: stdout Redirection ---
+ls /home > output.txt
+cat output.txt
+
+# --- Step 5: Append stdout ---
+echo "New entry" >> output.txt
+cat output.txt
+
+# --- Step 6: stderr Redirection ---
+ls /nonexistent 2> errors.txt
+cat errors.txt
+
+# --- Step 7: Redirect Both stdout and stderr ---
+ls /home /nonexistent > all_output.txt 2>&1
+cat all_output.txt
+
+# --- Step 8: Discard Output ---
+ls /home > /dev/null
+ls /nonexistent 2> /dev/null
+
+# --- Step 9: Pipe Commands ---
+ls -la | grep "^d"
+ls -la | wc -l
+
+# --- Step 10: Check Resource Limits ---
+ulimit -a
+ulimit -n
+ulimit -u
+cat /proc/sys/fs/file-max
+
+# --- Step 11: Increase File Limit ---
+ulimit -n 4096
+ulimit -n
+
+# --- Step 12: Create Report using vi ---
+vi IO_Investigation_Report.txt
+
+===========================================================

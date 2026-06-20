@@ -1,0 +1,25 @@
+BEFORE chmod:
+drwxr-xr-x 6 student student 4096 Jun 15 10:10 project_workspace
+drwxr-xr-x 2 student student 4096 Jun 15 10:10 config
+drwxr-xr-x 2 student student 4096 Jun 15 10:10 docs
+drwxr-xr-x 2 student student 4096 Jun 15 10:10 logs
+drwxr-xr-x 2 student student 4096 Jun 15 10:10 src
+-rw-r--r-- 1 student student    0 Jun 15 10:11 docs/README.md
+-rw-r--r-- 1 student student    0 Jun 15 10:11 config/settings.conf
+-rw-r--r-- 1 student student    0 Jun 15 10:11 logs/app.log
+
+AFTER chmod:
+drwxr-x--- 6 student student  4096 Jun 15 10:10 project_workspace
+drwx------ 2 root    student  4096 Jun 15 10:10 config
+drwxr-xr-x 2 student student  4096 Jun 15 10:10 docs
+drwxrwx--- 2 student devteam  4096 Jun 15 10:10 logs
+drwxrwx--- 2 student devteam  4096 Jun 15 10:10 src
+-rw-r----- 1 student student     0 Jun 15 10:11 docs/README.md
+-rw------- 1 student student     0 Jun 15 10:11 config/settings.conf
+-rw--w---- 1 student student     0 Jun 15 10:11 logs/app.log
+
+UMASK:
+Default: 0022
+New:     0027
+testfile: -rw-r----- (640)
+testdir:  drwxr-x--- (750)
