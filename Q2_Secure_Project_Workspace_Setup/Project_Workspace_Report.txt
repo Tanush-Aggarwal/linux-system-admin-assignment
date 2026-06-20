@@ -2,13 +2,6 @@
     SECURE PROJECT WORKSPACE SETUP REPORT
     Question 2 [4 Marks]
     Created using: vi editor
-===========================================================
-
-DATE: June 2026
-PREPARED BY: Linux Support Engineer (Student)
-OBJECTIVE: Create a secure workspace with appropriate permissions
-           for a project team to store files and documentation.
-
 -----------------------------------------------------------
 SECTION 1: DIRECTORY STRUCTURE CREATED
 -----------------------------------------------------------

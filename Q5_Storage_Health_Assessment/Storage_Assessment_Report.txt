@@ -2,13 +2,6 @@
     STORAGE HEALTH ASSESSMENT AND DOCUMENTATION REPORT
     Question 5 [4 Marks]
     Created using: vi editor
-===========================================================
-
-DATE: June 2026
-PREPARED BY: Linux Support Engineer (Student)
-OBJECTIVE: Assess storage resources before deploying a new
-           application server and document findings for the team.
-
 -----------------------------------------------------------
 SECTION 1: AVAILABLE STORAGE DEVICES
 -----------------------------------------------------------

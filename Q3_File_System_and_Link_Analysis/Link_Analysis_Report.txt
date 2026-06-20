@@ -2,15 +2,6 @@
     FILE SYSTEM AND LINK ANALYSIS REPORT
     Question 3 [4 Marks]
     Created using: vi editor
-===========================================================
-
-DATE: June 2026
-PREPARED BY: Linux Support Engineer (Student)
-OBJECTIVE: Investigate Linux file links (hard links and symbolic
-           links) to understand file recovery and inode behavior.
-
-SCENARIO: A developer accidentally deleted a file and wants to
-          understand how Linux links work to prevent data loss.
 
 -----------------------------------------------------------
 SECTION 1: INODE NUMBERS OF ALL FILES

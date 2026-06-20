@@ -2,17 +2,6 @@
     FILE ACCESS AND I/O INVESTIGATION REPORT
     Question 4 [4 Marks]
     Created using: vi editor
-===========================================================
-
-DATE: June 2026
-PREPARED BY: Linux Support Engineer (Student)
-OBJECTIVE: Investigate file access and I/O operations on a Linux
-           system experiencing application logging issues.
-
-SCENARIO: An application is experiencing logging issues. We must
-          investigate open files, file descriptors, I/O redirection
-          and resource limits to identify the root cause.
-
 -----------------------------------------------------------
 SECTION 1: OPEN FILES IDENTIFIED
 -----------------------------------------------------------

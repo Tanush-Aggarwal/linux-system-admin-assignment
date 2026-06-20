@@ -2,12 +2,6 @@
     LINUX ENVIRONMENT VERIFICATION REPORT
     Question 1 [4 Marks]
     Created using: vi editor
-===========================================================
-
-DATE: June 2026
-PREPARED BY: Linux Support Engineer (Student)
-ENVIRONMENT: Ubuntu Linux (WSL / Virtual Machine)
-
 -----------------------------------------------------------
 SECTION 1: USERNAME AND GROUP INFORMATION
 -----------------------------------------------------------
