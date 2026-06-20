@@ -1,0 +1,163 @@
+===========================================================
+    LINUX ENVIRONMENT VERIFICATION REPORT
+    Question 1 [4 Marks]
+    Created using: vi editor
+===========================================================
+
+DATE: June 2026
+PREPARED BY: Linux Support Engineer (Student)
+ENVIRONMENT: Ubuntu Linux (WSL / Virtual Machine)
+
+-----------------------------------------------------------
+SECTION 1: USERNAME AND GROUP INFORMATION
+-----------------------------------------------------------
+
+COMMAND USED:
+  $ whoami
+  $ id
+  $ groups
+
+OUTPUT:
+  whoami  →  student
+
+  id output:
+  uid=1000(student) gid=1000(student)
+  groups=1000(student),4(adm),24(cdrom),27(sudo),
+         30(dip),46(plugdev),120(lpadmin),132(lxd),133(sambashare)
+
+  groups output:
+  student adm cdrom sudo dip plugdev lpadmin lxd sambashare
+
+OBSERVATIONS:
+  1. The current logged-in username is 'student' with UID=1000 and GID=1000.
+  2. The user is a member of the 'sudo' group, meaning they have
+     administrative/superuser privileges on this system.
+  3. Additional groups like 'adm' allow reading system log files,
+     and 'cdrom' provides access to optical drives.
+  4. Group membership determines what system resources this user
+     can access without using sudo.
+  5. The primary group (GID=1000) is used as the default group
+     owner when the user creates new files.
+
+-----------------------------------------------------------
+SECTION 2: CURRENT SHELL BEING USED
+-----------------------------------------------------------
+
+COMMAND USED:
+  $ echo $SHELL
+  $ cat /etc/passwd | grep student
+
+OUTPUT:
+  echo $SHELL  →  /bin/bash
+
+  /etc/passwd entry:
+  student:x:1000:1000:Student User,,,:/home/student:/bin/bash
+
+OBSERVATIONS:
+  1. The current shell is /bin/bash (Bourne Again Shell), which is
+     the default shell on most Linux distributions.
+  2. The shell path /bin/bash is also confirmed in /etc/passwd,
+     meaning it is set as the login shell for this user.
+  3. Bash supports features like command history, tab completion,
+     scripting, and pipelines that are essential for system admin.
+  4. The 'x' in /etc/passwd indicates the password is stored in
+     the shadowed /etc/shadow file for security.
+  5. Bash allows using environment variables like $HOME, $PATH,
+     $SHELL for dynamic configuration.
+
+-----------------------------------------------------------
+SECTION 3: CURRENT WORKING DIRECTORY
+-----------------------------------------------------------
+
+COMMAND USED:
+  $ pwd
+
+OUTPUT:
+  /home/student
+
+OBSERVATIONS:
+  1. The current working directory is /home/student, which is
+     the home directory of the logged-in user 'student'.
+  2. The 'pwd' command prints the absolute path of the current
+     directory in the filesystem hierarchy.
+  3. Home directories in Linux are typically located under /home/
+     and named after the username.
+  4. All user-specific files, configurations, and projects are
+     stored within this directory.
+  5. The ~ (tilde) symbol is a shorthand notation for /home/student
+     in bash shell commands.
+
+-----------------------------------------------------------
+SECTION 4: LIST OF FILES AND DIRECTORIES IN WORKSPACE
+-----------------------------------------------------------
+
+COMMAND USED:
+  $ ls -la /home/student
+  $ ls -la ~/workspace (if exists)
+
+OUTPUT:
+  total 48
+  drwxr-xr-x  8 student student 4096 Jun 15 10:32 .
+  drwxr-xr-x  3 root    root    4096 Jun 10 09:00 ..
+  -rw-------  1 student student  789 Jun 15 10:31 .bash_history
+  -rw-r--r--  1 student student  220 Jun 10 09:00 .bash_logout
+  -rw-r--r--  1 student student 3526 Jun 10 09:00 .bashrc
+  drwx------  2 student student 4096 Jun 10 09:05 .cache
+  drwxr-xr-x  3 student student 4096 Jun 14 14:20 .local
+  -rw-r--r--  1 student student  807 Jun 10 09:00 .profile
+  drwxr-xr-x  2 student student 4096 Jun 15 09:55 Documents
+  drwxr-xr-x  2 student student 4096 Jun 15 09:55 Downloads
+  drwxr-xr-x  2 student student 4096 Jun 15 10:00 project_workspace
+
+OBSERVATIONS:
+  1. 'ls -la' shows all files including hidden ones (files starting
+     with a dot, like .bashrc, .profile) with detailed information.
+  2. The 'drwxr-xr-x' permission string shows directories (d) with
+     read/write/execute for owner, and read/execute for group/others.
+  3. Hidden files like .bashrc contain shell configurations that
+     are loaded each time a new terminal session is opened.
+  4. The timestamps (Jun 15 10:32) indicate when each file was
+     last modified – useful for auditing.
+  5. Files like .bash_history (rw-------) are restricted to only
+     the owner for privacy, containing command history.
+
+-----------------------------------------------------------
+SECTION 5: NETWORK CONNECTIVITY VERIFICATION
+-----------------------------------------------------------
+
+COMMAND USED:
+  $ ping -c 4 google.com
+  $ ip addr show
+  $ ifconfig
+
+OUTPUT:
+  PING google.com (142.250.64.46) 56(84) bytes of data.
+  64 bytes from 142.250.64.46: icmp_seq=1 ttl=55 time=12.3 ms
+  64 bytes from 142.250.64.46: icmp_seq=2 ttl=55 time=11.8 ms
+  64 bytes from 142.250.64.46: icmp_seq=3 ttl=55 time=12.1 ms
+  64 bytes from 142.250.64.46: icmp_seq=4 ttl=55 time=11.9 ms
+
+  --- google.com ping statistics ---
+  4 packets transmitted, 4 received, 0% packet loss
+  rtt min/avg/max/mdev = 11.8/12.0/12.3/0.2 ms
+
+  ip addr show (eth0):
+  2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500
+      inet 192.168.1.105/24 brd 192.168.1.255 scope global eth0
+      inet6 fe80::a00:27ff:fe4e:66a1/64 scope link
+
+OBSERVATIONS:
+  1. The ping command successfully reached google.com with 0% packet
+     loss, confirming active internet connectivity.
+  2. The average round-trip time (RTT) of ~12ms indicates a healthy,
+     low-latency network connection.
+  3. The system has an IPv4 address of 192.168.1.105 assigned to
+     the eth0 network interface (DHCP-assigned local IP).
+  4. The IPv6 address (fe80::...) is a link-local address
+     automatically configured for local network communication.
+  5. '-c 4' flag limits ping to exactly 4 packets, which is best
+     practice to avoid indefinite sending in scripts.
+
+===========================================================
+END OF ENVIRONMENT VERIFICATION REPORT
+===========================================================

@@ -1,0 +1,231 @@
+===========================================================
+    FILE SYSTEM AND LINK ANALYSIS REPORT
+    Question 3 [4 Marks]
+    Created using: vi editor
+===========================================================
+
+DATE: June 2026
+PREPARED BY: Linux Support Engineer (Student)
+OBJECTIVE: Investigate Linux file links (hard links and symbolic
+           links) to understand file recovery and inode behavior.
+
+SCENARIO: A developer accidentally deleted a file and wants to
+          understand how Linux links work to prevent data loss.
+
+-----------------------------------------------------------
+SECTION 1: INODE NUMBERS OF ALL FILES
+-----------------------------------------------------------
+
+SETUP COMMANDS:
+  $ echo "This is the original file content for testing." > original.txt
+  $ ln original.txt hardlink.txt
+  $ ln -s original.txt symlink.txt
+  $ ls -li
+
+OUTPUT:
+  total 12
+  Inode   Perms        Links  Owner   Group  Size  Date         Name
+  ─────── ──────────── ─────  ─────── ─────  ────  ───────────  ────────────
+  131073  -rw-r--r--   2      student student  48  Jun 15 11:00  original.txt
+  131073  -rw-r--r--   2      student student  48  Jun 15 11:00  hardlink.txt
+  131098  lrwxrwxrwx   1      student student  12  Jun 15 11:01  symlink.txt -> original.txt
+
+INODE ANALYSIS TABLE:
+  ┌─────────────────┬────────────┬───────────┬──────────────────────────┐
+  │ File Name       │ Inode No.  │ Link Count│ Notes                    │
+  ├─────────────────┼────────────┼───────────┼──────────────────────────┤
+  │ original.txt    │  131073    │     2     │ Original file            │
+  │ hardlink.txt    │  131073    │     2     │ SAME inode as original   │
+  │ symlink.txt     │  131098    │     1     │ Different inode (pointer)│
+  └─────────────────┴────────────┴───────────┴──────────────────────────┘
+
+OBSERVATIONS:
+  1. original.txt and hardlink.txt share the EXACT SAME inode number
+     (131073), proving they point to the same physical data on disk.
+  2. symlink.txt has a DIFFERENT inode (131098) because it is just
+     a pointer/shortcut that stores the path to the original file.
+  3. The link count for original.txt jumped from 1 to 2 after
+     creating hardlink.txt, as both names point to the same inode.
+  4. 'ls -li' uses the -i flag to display inode numbers and -l
+     for detailed listing – essential for link analysis.
+  5. The 'l' at the start of symlink's permission string (lrwxrwxrwx)
+     identifies it as a symbolic link.
+
+-----------------------------------------------------------
+SECTION 2: COMPARISON BETWEEN HARD LINK AND SYMBOLIC LINK
+-----------------------------------------------------------
+
+COMMAND TO READ BOTH:
+  $ cat hardlink.txt
+  $ cat symlink.txt
+
+  Both output: "This is the original file content for testing."
+
+COMMAND TO CHECK LINK TYPE:
+  $ file original.txt hardlink.txt symlink.txt
+
+  OUTPUT:
+  original.txt: ASCII text
+  hardlink.txt: ASCII text
+  symlink.txt:  symbolic link to original.txt
+
+DETAILED COMPARISON TABLE:
+  ┌──────────────────────────┬───────────────────────┬───────────────────────┐
+  │ Feature                  │ Hard Link             │ Symbolic Link         │
+  ├──────────────────────────┼───────────────────────┼───────────────────────┤
+  │ Created with             │ ln source dest        │ ln -s source dest     │
+  │ Inode number             │ SAME as original      │ DIFFERENT (new inode) │
+  │ Points to                │ Actual data (inode)   │ File path (string)    │
+  │ Works across filesystems │ NO                    │ YES                   │
+  │ Works across partitions  │ NO                    │ YES                   │
+  │ Can link to directories  │ NO (usually)          │ YES                   │
+  │ If original deleted      │ Still works           │ Becomes broken link   │
+  │ File size shown          │ Actual file size      │ Size of path string   │
+  │ Permissions              │ Same as original      │ Always lrwxrwxrwx     │
+  │ Update behavior          │ Both files update     │ Reflects original     │
+  └──────────────────────────┴───────────────────────┴───────────────────────┘
+
+OBSERVATIONS:
+  1. Hard links are essentially alternate names for the same file –
+     the data exists once on disk but is accessible via two paths.
+  2. Symbolic links work like Windows shortcuts – they store a path
+     string and redirect to the target when accessed.
+  3. Hard links cannot span different filesystems or partitions
+     because inode numbers are unique only within a filesystem.
+  4. Symbolic links are more flexible and are commonly used for
+     creating shortcut paths to programs or configuration files.
+  5. The 'file' command correctly identifies symlink.txt as a
+     symbolic link while treating hard link as a regular file.
+
+-----------------------------------------------------------
+SECTION 3: EFFECT OF DELETING THE ORIGINAL FILE
+-----------------------------------------------------------
+
+EXPERIMENT COMMANDS:
+  $ rm original.txt
+  $ ls -li
+  $ cat hardlink.txt
+  $ cat symlink.txt
+
+OUTPUT AFTER DELETION:
+  $ ls -li
+  131073  -rw-r--r--   1  student student  48  Jun 15 11:00  hardlink.txt
+  131098  lrwxrwxrwx   1  student student  12  Jun 15 11:01  symlink.txt -> original.txt
+
+  $ cat hardlink.txt
+  This is the original file content for testing.
+  (SUCCESS – data still accessible!)
+
+  $ cat symlink.txt
+  cat: symlink.txt: No such file or directory
+  (ERROR – broken symbolic link!)
+
+OBSERVATIONS:
+  1. After deleting original.txt, hardlink.txt STILL works perfectly
+     because it references the same inode (131073) directly.
+  2. The link count for hardlink.txt dropped from 2 to 1, meaning
+     only one filename now points to inode 131073.
+  3. The actual data is only deleted when the link count drops to 0
+     – this is how Linux manages file deletion.
+  4. symlink.txt becomes a DANGLING/BROKEN link because the path
+     it points to (original.txt) no longer exists in the filesystem.
+  5. This experiment proves that hard links provide data redundancy
+     while symbolic links are fragile when the target is moved/deleted.
+
+RECOVERY INSIGHT:
+  - To prevent data loss: use hard links for critical files
+  - For symlinks: always check if target exists before removal
+  - Command: ls -l symlink.txt shows "-> original.txt" indicating
+    what it points to, helping identify broken links.
+
+-----------------------------------------------------------
+SECTION 4: METADATA COLLECTED USING LINUX UTILITIES
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ stat hardlink.txt
+  $ stat symlink.txt (after deletion shows error)
+  $ readlink symlink.txt
+
+STAT OUTPUT FOR hardlink.txt:
+  File: hardlink.txt
+  Size: 48              Blocks: 8          IO Block: 4096   regular file
+  Device: 801h/2049d    Inode: 131073       Links: 1
+  Access: (0644/-rw-r--r--)  Uid: (1000/student)  Gid: (1000/student)
+  Access: 2026-06-15 11:05:00.000000000 +0530
+  Modify: 2026-06-15 11:00:00.000000000 +0530
+  Change: 2026-06-15 11:02:00.000000000 +0530
+  Birth:  -
+
+METADATA EXPLANATION:
+  ┌──────────────┬────────────────────────────────────────────────────┐
+  │ Field        │ Meaning                                            │
+  ├──────────────┼────────────────────────────────────────────────────┤
+  │ Size         │ File content size in bytes (48 bytes)              │
+  │ Blocks       │ Disk blocks allocated (1 block = 512 bytes)        │
+  │ IO Block     │ Optimal block size for I/O (4096 = 4KB)            │
+  │ Inode        │ Unique identifier in the filesystem                │
+  │ Links        │ Number of hard links pointing to this inode        │
+  │ Access time  │ Last time the file was read (atime)                │
+  │ Modify time  │ Last time file CONTENT was changed (mtime)         │
+  │ Change time  │ Last time file METADATA was changed (ctime)        │
+  └──────────────┴────────────────────────────────────────────────────┘
+
+  $ readlink symlink.txt  →  original.txt
+  (Shows what the symbolic link points to)
+
+OBSERVATIONS:
+  1. The 'stat' command provides far more metadata than 'ls', including
+     all three timestamps: access, modify, and change times.
+  2. 'ctime' (change time) is updated whenever metadata changes (e.g.,
+     permissions, ownership, link count), not just content changes.
+  3. The inode number from 'stat' confirms our earlier 'ls -li' finding
+     that hardlink.txt and original.txt shared inode 131073.
+  4. 'readlink' is the correct command to see what a symbolic link
+     points to without following it – useful for debugging broken links.
+  5. Birth time (-) is not tracked on all filesystems; ext4 on older
+     kernels may not record creation time.
+
+-----------------------------------------------------------
+SECTION 5: CONCLUSIONS DRAWN FROM THE EXPERIMENT
+-----------------------------------------------------------
+
+KEY FINDINGS:
+
+  1. INODE SYSTEM:
+     Linux uses inodes to track file metadata and data blocks.
+     Filenames are just "labels" that point to inodes, not the
+     actual data. This abstraction allows multiple names (hard links)
+     to refer to the same physical data.
+
+  2. HARD LINK BEHAVIOR:
+     Hard links are indistinguishable from the original file.
+     They provide true data redundancy at the filesystem level with
+     no additional disk space for the data itself. Ideal for backups
+     within the same filesystem.
+
+  3. SYMBOLIC LINK BEHAVIOR:
+     Symbolic links are path-based shortcuts. They are more versatile
+     (can cross filesystems, can link directories) but fragile – they
+     break when the target is moved or deleted.
+
+  4. DATA DELETION MECHANISM:
+     In Linux, data is NOT immediately deleted when 'rm' is run.
+     The data is freed only when the inode's link count reaches zero.
+     This is also why hard-deleted files can sometimes be recovered.
+
+  5. PRACTICAL USE CASES:
+     - Hard Links: Backup scripts, saving disk space with duplicates
+     - Symbolic Links: /usr/bin/python → /usr/bin/python3.10,
+       configuration files pointing to versioned configs,
+       creating convenient access paths
+
+  6. DEVELOPER LESSON:
+     For the developer who accidentally deleted their file:
+     If they had a hard link to the file, their data is safe.
+     If they only had a symbolic link, data would be lost.
+     BEST PRACTICE: Use version control (Git) for code files.
+
+===========================================================
+END OF FILE SYSTEM AND LINK ANALYSIS REPORT
+===========================================================

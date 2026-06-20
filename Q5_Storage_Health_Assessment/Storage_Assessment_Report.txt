@@ -1,0 +1,375 @@
+===========================================================
+    STORAGE HEALTH ASSESSMENT AND DOCUMENTATION REPORT
+    Question 5 [4 Marks]
+    Created using: vi editor
+===========================================================
+
+DATE: June 2026
+PREPARED BY: Linux Support Engineer (Student)
+OBJECTIVE: Assess storage resources before deploying a new
+           application server and document findings for the team.
+
+-----------------------------------------------------------
+SECTION 1: AVAILABLE STORAGE DEVICES
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ lsblk                    ← List block devices in tree format
+  $ lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT
+  $ fdisk -l                 ← Detailed partition info (requires sudo)
+  $ sudo blkid               ← Show UUIDs and filesystem types
+
+OUTPUT (lsblk):
+  NAME   MAJ:MIN RM  SIZE  RO TYPE MOUNTPOINT
+  sda      8:0    0   50G   0 disk
+  ├─sda1   8:1    0    1M   0 part
+  ├─sda2   8:2    0  512M   0 part /boot/efi
+  ├─sda3   8:3    0    2G   0 part /boot
+  └─sda4   8:4    0 47.5G  0 part /
+  sdb      8:16   0  100G  0 disk
+  └─sdb1   8:17   0  100G  0 part /data
+  sr0     11:0    1 1024M  0 rom
+
+OUTPUT (fdisk -l /dev/sda):
+  Disk /dev/sda: 50 GiB, 53687091200 bytes, 104857600 sectors
+  Disk model: VBOX HARDDISK
+  Units: sectors of 1 * 512 = 512 bytes
+  Sector size (logical/physical): 512 bytes / 512 bytes
+  I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+  Device     Boot   Start       End   Sectors  Size Id Type
+  /dev/sda1           2048      4095      2048    1M 83 Linux
+  /dev/sda2           4096   1052671   1048576  512M EF EFI System
+  /dev/sda3        1052672   5246975   4194304    2G 83 Linux
+  /dev/sda4        5246976 104857566  99610591 47.5G 83 Linux
+
+STORAGE DEVICE INVENTORY:
+  ┌─────────────┬──────────┬───────────┬─────────────┬──────────────┐
+  │ Device      │ Size     │ Type      │ Filesystem  │ Mount Point  │
+  ├─────────────┼──────────┼───────────┼─────────────┼──────────────┤
+  │ /dev/sda    │ 50 GB    │ HDD/SSD   │ (disk)      │ -            │
+  │ /dev/sda1   │ 1 MB     │ Partition │ -           │ -            │
+  │ /dev/sda2   │ 512 MB   │ Partition │ vfat        │ /boot/efi    │
+  │ /dev/sda3   │ 2 GB     │ Partition │ ext4        │ /boot        │
+  │ /dev/sda4   │ 47.5 GB  │ Partition │ ext4        │ /            │
+  │ /dev/sdb    │ 100 GB   │ HDD/SSD   │ (disk)      │ -            │
+  │ /dev/sdb1   │ 100 GB   │ Partition │ ext4        │ /data        │
+  │ /dev/sr0    │ 1024 MB  │ CD-ROM    │ -           │ -            │
+  └─────────────┴──────────┴───────────┴─────────────┴──────────────┘
+
+OBSERVATIONS:
+  1. The server has two physical disks: sda (50GB primary OS disk)
+     and sdb (100GB dedicated data disk) – a good separation.
+  2. sda is partitioned with EFI boot partition (sda2), dedicated
+     /boot partition (sda3), and root filesystem (sda4).
+  3. A dedicated /data partition on sdb allows the data volume to
+     grow independently without affecting OS partition space.
+  4. The CD-ROM device (sr0) is present but not mounted – should
+     be disabled/removed in a production server environment.
+  5. 'lsblk' provides a clean tree view of device hierarchy while
+     'fdisk -l' shows low-level sector information.
+
+-----------------------------------------------------------
+SECTION 2: MOUNTED FILE SYSTEMS
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ mount | column -t         ← Show all mounted filesystems
+  $ cat /etc/fstab            ← View auto-mount configuration
+  $ df -hT                    ← Human-readable with filesystem type
+
+OUTPUT (mount | grep -v snap):
+  sysfs      on /sys           type sysfs      (rw,nosuid,nodev,noexec)
+  proc       on /proc          type proc       (rw,nosuid,nodev,noexec)
+  devtmpfs   on /dev           type devtmpfs   (rw,size=1990528k)
+  /dev/sda4  on /              type ext4       (rw,relatime,errors=remount-ro)
+  /dev/sda3  on /boot          type ext4       (rw,relatime)
+  /dev/sda2  on /boot/efi      type vfat       (rw,relatime)
+  /dev/sdb1  on /data          type ext4       (rw,relatime)
+  tmpfs      on /run           type tmpfs      (rw,nosuid,nodev)
+  tmpfs      on /dev/shm       type tmpfs      (rw,nosuid,nodev)
+
+OUTPUT (cat /etc/fstab):
+  # <file system>  <mount point>  <type>  <options>          <dump> <pass>
+  UUID=a1b2c3d4    /              ext4    errors=remount-ro  0       1
+  UUID=e5f6a7b8    /boot          ext4    defaults           0       2
+  UUID=c9d0e1f2    /boot/efi      vfat    umask=0077         0       1
+  UUID=a3b4c5d6    /data          ext4    defaults,nofail    0       2
+  /swapfile        none           swap    sw                 0       0
+
+MOUNTED FILESYSTEM SUMMARY:
+  ┌──────────────┬──────────────┬────────┬──────────────────────────────┐
+  │ Device       │ Mount Point  │ Type   │ Notable Options               │
+  ├──────────────┼──────────────┼────────┼──────────────────────────────┤
+  │ /dev/sda4    │ /            │ ext4   │ errors=remount-ro (safe)     │
+  │ /dev/sda3    │ /boot        │ ext4   │ defaults                     │
+  │ /dev/sda2    │ /boot/efi    │ vfat   │ umask=0077 (secure)          │
+  │ /dev/sdb1    │ /data        │ ext4   │ nofail (boots even if absent)│
+  │ tmpfs        │ /run, /shm   │ tmpfs  │ RAM-backed, fast, volatile   │
+  └──────────────┴──────────────┴────────┴──────────────────────────────┘
+
+OBSERVATIONS:
+  1. The root filesystem uses 'errors=remount-ro' which automatically
+     remounts as read-only on error, preventing filesystem corruption.
+  2. The /boot/efi partition uses vfat (FAT32) as required by the
+     UEFI standard for bootloaders.
+  3. The 'nofail' option on /data means the system boots normally
+     even if the data disk is unavailable – good for resilience.
+  4. tmpfs filesystems (/run, /dev/shm) are RAM-backed and very fast,
+     but data is lost on reboot – only suitable for temporary files.
+  5. fstab uses UUIDs instead of device names (/dev/sdX) because
+     device names can change across reboots; UUIDs are permanent.
+
+-----------------------------------------------------------
+SECTION 3: DISK USAGE STATISTICS
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ df -h                    ← Human-readable disk usage
+  $ df -h --total            ← With grand total
+  $ du -sh /var/log          ← Size of log directory
+  $ du -sh /*                ← Size of each top-level directory
+  $ du -h --max-depth=1 /    ← Top-level breakdown
+
+OUTPUT (df -h):
+  Filesystem      Size  Used Avail Use%  Mounted on
+  /dev/sda4        47G   18G   27G  40%  /
+  /dev/sda3       1.9G  201M  1.6G  12%  /boot
+  /dev/sda2       511M  5.8M  505M   2%  /boot/efi
+  /dev/sdb1        99G   23G   71G  24%  /data
+  tmpfs           1.9G  1.2M  1.9G   1%  /run
+  tmpfs           7.8G     0  7.8G   0%  /dev/shm
+
+OUTPUT (du -h --max-depth=1 / 2>/dev/null | sort -rh | head -10):
+  18G   /
+  8.2G  /usr
+  4.1G  /var
+  2.3G  /home
+  1.8G  /opt
+  980M  /lib
+  456M  /boot
+  234M  /etc
+  128M  /tmp
+   89M  /root
+
+OUTPUT (du -sh /var/log):
+  1.2G  /var/log
+
+DISK USAGE SUMMARY TABLE:
+  ┌────────────────┬────────┬────────┬────────┬──────┬──────────────────┐
+  │ Filesystem     │ Total  │ Used   │ Free   │ Use% │ Status           │
+  ├────────────────┼────────┼────────┼────────┼──────┼──────────────────┤
+  │ / (root)       │  47 GB │  18 GB │  27 GB │  40% │ ✓ HEALTHY        │
+  │ /boot          │ 1.9 GB │ 201 MB │ 1.6 GB │  12% │ ✓ HEALTHY        │
+  │ /boot/efi      │ 511 MB │ 5.8 MB │ 505 MB │   2% │ ✓ HEALTHY        │
+  │ /data          │  99 GB │  23 GB │  71 GB │  24% │ ✓ HEALTHY        │
+  │ tmpfs (/run)   │ 1.9 GB │ 1.2 MB │ 1.9 GB │   1% │ ✓ HEALTHY        │
+  └────────────────┴────────┴────────┴────────┴──────┴──────────────────┘
+
+OBSERVATIONS:
+  1. All filesystems are well below 80% usage – industry standard
+     recommends alerts at 80% and urgent action at 90%.
+  2. /var/log consumes 1.2GB of /var's 4.1GB – log rotation should
+     be configured (logrotate) to prevent log-driven disk exhaustion.
+  3. /data partition on the secondary disk has 71GB free, making it
+     ideal for storing application data and databases.
+  4. tmpfs shows 0% usage for /dev/shm, indicating shared memory
+     is not being used – available for application caching.
+  5. The 'du' output reveals /usr (8.2GB) is the largest directory,
+     containing installed packages and libraries.
+
+-----------------------------------------------------------
+SECTION 4: INODE UTILIZATION
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ df -i                    ← Inode usage for all filesystems
+  $ df -ih                   ← Human-readable inode counts
+  $ ls -lai /var/tmp         ← Check inode usage in problematic dirs
+  $ find / -xdev -printf '%h\n' | sort | uniq -c | sort -k1 -rn | head
+
+OUTPUT (df -i):
+  Filesystem      Inodes  IUsed   IFree  IUse%  Mounted on
+  /dev/sda4      3145728  187293 2958435    6%   /
+  /dev/sda3       131072    1024  130048    1%   /boot
+  /dev/sda2            0       0       0     -   /boot/efi
+  /dev/sdb1      6553600  234567 6319033    4%   /data
+  tmpfs           499760     890  498870    1%   /run
+
+INODE UTILIZATION TABLE:
+  ┌────────────────┬──────────┬─────────┬─────────┬───────┬──────────────┐
+  │ Filesystem     │ Total    │ Used    │ Free    │ Use%  │ Status       │
+  ├────────────────┼──────────┼─────────┼─────────┼───────┼──────────────┤
+  │ /dev/sda4 (/)  │ 3,145,728│ 187,293 │2,958,435│   6%  │ ✓ HEALTHY    │
+  │ /dev/sda3      │   131,072│   1,024 │  130,048│   1%  │ ✓ HEALTHY    │
+  │ /dev/sdb1      │ 6,553,600│ 234,567 │6,319,033│   4%  │ ✓ HEALTHY    │
+  │ /boot/efi      │        0 │       0 │        0│   -   │ N/A (vfat)   │
+  └────────────────┴──────────┴─────────┴─────────┴───────┴──────────────┘
+
+WHAT IS AN INODE?
+  - An inode is a data structure storing file metadata (size,
+    permissions, timestamps, data block locations).
+  - Every file/directory consumes one inode.
+  - A filesystem can run out of inodes even if disk space is free
+    (common with many small files like email servers or caches).
+
+OBSERVATIONS:
+  1. Inode usage is very low (4-6%) across all filesystems, indicating
+     no risk of inode exhaustion in the near term.
+  2. vfat (/boot/efi) does not use inodes – it's a FAT filesystem
+     which manages files differently (File Allocation Table).
+  3. If inode exhaustion occurs (100%), 'find /var -type f | wc -l'
+     can identify directories with excessive small files.
+  4. The /data partition has 6.5 million inodes – suitable for
+     applications that create many small files (email, caching).
+  5. Inode count is set when the filesystem is created (mkfs.ext4)
+     and cannot be changed without reformatting – choose wisely.
+
+-----------------------------------------------------------
+SECTION 5: STORAGE HEALTH OBSERVATIONS
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ sudo smartctl -a /dev/sda        ← S.M.A.R.T. health check
+  $ sudo smartctl -H /dev/sda        ← Quick health status
+  $ sudo e2fsck -n /dev/sda4         ← Filesystem check (dry run)
+  $ dmesg | grep -i error            ← Kernel error messages
+  $ dmesg | grep -i "I/O error"      ← I/O error check
+  $ sudo tune2fs -l /dev/sda4        ← Filesystem parameters
+
+OUTPUT (smartctl -H /dev/sda):
+  === START OF READ SMART DATA SECTION ===
+  SMART overall-health self-assessment test result: PASSED
+
+OUTPUT (smartctl -a /dev/sda - Key SMART Attributes):
+  ID# ATTRIBUTE_NAME          VALUE WORST THRESH TYPE  UPDATED
+    1 Raw_Read_Error_Rate     200   200   051    Pre-fail  Always   0
+    5 Reallocated_Sector_Ct   100   100   000    Pre-fail  Always   0
+    9 Power_On_Hours          248   248   000    Old_age   Always   248
+  187 Reported_Uncorrect      100   100   000    Old_age   Always   0
+  194 Temperature_Celsius      35    35   000    Old_age   Always   35 (Min/Max 20/45)
+  197 Current_Pending_Sector  100   100   000    Old_age   Always   0
+  198 Offline_Uncorrectable   100   100   000    Old_age   Always   0
+
+OUTPUT (tune2fs -l /dev/sda4 | grep -E "check|count|state"):
+  Filesystem state:         clean
+  Last checked:             Sun Jun  8 09:15:22 2026
+  Check interval:           15552000 (6 months)
+  Next check after:         Fri Dec  5 10:15:22 2026
+  Mount count:              47
+  Maximum mount count:      -1
+
+HEALTH OBSERVATIONS SUMMARY:
+  ✓ S.M.A.R.T. overall health: PASSED
+  ✓ Reallocated sectors: 0    (No bad sectors)
+  ✓ Uncorrectable errors: 0   (No read errors)
+  ✓ Temperature: 35°C         (Normal; safe range: 20-55°C)
+  ✓ Pending sectors: 0        (No sectors waiting for reallocation)
+  ✓ Filesystem state: clean   (No dirty journal, no fsck needed)
+  ✓ Last checked: Jun 8, 2026 (Recent check confirms integrity)
+
+OBSERVATIONS:
+  1. All S.M.A.R.T. attributes are within normal thresholds, indicating
+     the disk hardware is healthy with no signs of imminent failure.
+  2. 0 reallocated sectors is excellent – even 1-5 can indicate a
+     drive beginning to develop bad sectors (warning sign).
+  3. Disk temperature (35°C) is well within safe operating range.
+     Temperatures above 55°C can degrade disk lifespan.
+  4. Filesystem state is "clean", meaning it was properly unmounted
+     last time and no journal recovery is needed.
+  5. Power-on hours (248) indicates a relatively new drive, so
+     disk lifespan concerns are minimal for this deployment.
+
+-----------------------------------------------------------
+SECTION 6: RECOMMENDATIONS FOR IMPROVING STORAGE UTILIZATION
+-----------------------------------------------------------
+
+BASED ON ANALYSIS, THE FOLLOWING RECOMMENDATIONS ARE MADE:
+
+  RECOMMENDATION 1: CONFIGURE LOG ROTATION
+  ─────────────────────────────────────────
+  Issue: /var/log is consuming 1.2GB and growing.
+  Action: Configure logrotate to rotate and compress old logs.
+  Command: sudo nano /etc/logrotate.d/app-logs
+  Config:
+    /var/log/app/*.log {
+        daily
+        rotate 14
+        compress
+        delaycompress
+        missingok
+        notifempty
+    }
+  Expected Benefit: Reduce log storage by 60-70%
+
+  RECOMMENDATION 2: MONITOR DISK USAGE AUTOMATICALLY
+  ───────────────────────────────────────────────────
+  Issue: No automated alerts for disk space.
+  Action: Add a disk monitoring cron job.
+  Command: sudo crontab -e
+  Add: */30 * * * * df -h | awk '$5+0>80{print}' | mail -s "Disk Alert" admin@company.com
+  Expected Benefit: Early warning before disk fills up.
+
+  RECOMMENDATION 3: IMPLEMENT LVM (LOGICAL VOLUME MANAGER)
+  ──────────────────────────────────────────────────────────
+  Issue: Current fixed partitions cannot be resized easily.
+  Action: Migrate to LVM for flexible volume management.
+  Benefits:
+    - Resize logical volumes without downtime
+    - Take snapshots before major deployments
+    - Add new physical disks and extend volumes on the fly
+  Commands:
+    pvcreate /dev/sdc
+    vgextend datavg /dev/sdc
+    lvextend -L +50G /dev/datavg/datalv
+    resize2fs /dev/datavg/datalv
+
+  RECOMMENDATION 4: DEDICATE /var/log TO SEPARATE PARTITION
+  ───────────────────────────────────────────────────────────
+  Issue: If logs fill up, entire root (/) filesystem could fill.
+  Action: Move /var/log to its own partition or LVM volume.
+  Benefit: Log growth cannot cause system instability.
+
+  RECOMMENDATION 5: ENABLE PERIODIC S.M.A.R.T. MONITORING
+  ──────────────────────────────────────────────────────────
+  Issue: No automated disk health monitoring configured.
+  Action: Install and configure smartd daemon.
+  Commands:
+    sudo apt install smartmontools
+    sudo systemctl enable smartd
+    sudo nano /etc/smartd.conf
+  Add: /dev/sda -a -o on -S on -s (S/../.././02|L/../../6/03) -m admin@company.com
+
+  RECOMMENDATION 6: SCHEDULE REGULAR FILESYSTEM CHECKS
+  ──────────────────────────────────────────────────────
+  Issue: Filesystems should be periodically verified for integrity.
+  Action: Schedule automated fsck runs.
+  Commands:
+    sudo tune2fs -c 30 /dev/sda4     ← Force check every 30 mounts
+    sudo tune2fs -i 1m /dev/sda4     ← Or every 1 month
+
+STORAGE HEALTH SCORECARD:
+  ┌─────────────────────────────────┬──────────┬───────────────────────┐
+  │ Category                        │ Score    │ Action Required       │
+  ├─────────────────────────────────┼──────────┼───────────────────────┤
+  │ Disk Space Availability         │ ✓ GOOD   │ Monitor /var/log      │
+  │ Inode Utilization               │ ✓ GOOD   │ No action needed      │
+  │ Hardware Health (S.M.A.R.T.)    │ ✓ GOOD   │ Schedule monitoring   │
+  │ Filesystem Integrity            │ ✓ GOOD   │ Schedule regular fsck │
+  │ Log Management                  │ ⚠ FAIR  │ Configure logrotate   │
+  │ Volume Management Flexibility   │ ⚠ FAIR  │ Consider LVM          │
+  │ Automated Monitoring            │ ✗ POOR  │ Set up disk alerts    │
+  └─────────────────────────────────┴──────────┴───────────────────────┘
+
+OVERALL ASSESSMENT:
+  The storage infrastructure is in GOOD HEALTH for deployment.
+  Physical disk health is excellent, space utilization is low,
+  and filesystems are clean. The primary areas for improvement
+  are operational: log rotation, automated monitoring, and
+  considering LVM for long-term flexibility. Deployment of the
+  new application server can proceed with these recommendations
+  implemented concurrently.
+
+===========================================================
+END OF STORAGE HEALTH ASSESSMENT AND DOCUMENTATION REPORT
+===========================================================

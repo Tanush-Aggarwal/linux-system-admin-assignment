@@ -1,0 +1,270 @@
+===========================================================
+    FILE ACCESS AND I/O INVESTIGATION REPORT
+    Question 4 [4 Marks]
+    Created using: vi editor
+===========================================================
+
+DATE: June 2026
+PREPARED BY: Linux Support Engineer (Student)
+OBJECTIVE: Investigate file access and I/O operations on a Linux
+           system experiencing application logging issues.
+
+SCENARIO: An application is experiencing logging issues. We must
+          investigate open files, file descriptors, I/O redirection
+          and resource limits to identify the root cause.
+
+-----------------------------------------------------------
+SECTION 1: OPEN FILES IDENTIFIED
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ lsof                          ← List all open files
+  $ lsof -p $$                    ← Open files for current shell
+  $ lsof -u student               ← Files opened by user 'student'
+  $ lsof /var/log/syslog          ← Processes using syslog
+  $ lsof -i :80                   ← Files using port 80
+
+OUTPUT (lsof -p $$ - Current Shell's Open Files):
+  COMMAND   PID     USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+  bash      1234 student  cwd    DIR    8,1     4096  131072 /home/student
+  bash      1234 student  rtd    DIR    8,1     4096       2 /
+  bash      1234 student  txt    REG    8,1  1037528  524289 /bin/bash
+  bash      1234 student  mem    REG    8,1  1873200  524300 /lib/x86_64-linux-gnu/libc.so.6
+  bash      1234 student    0u   CHR  136,0      0t0       3 /dev/pts/0
+  bash      1234 student    1u   CHR  136,0      0t0       3 /dev/pts/0
+  bash      1234 student    2u   CHR  136,0      0t0       3 /dev/pts/0
+
+OUTPUT (lsof /var/log/syslog):
+  COMMAND   PID   USER   FD   TYPE DEVICE SIZE/OFF   NODE NAME
+  rsyslogd  987   syslog  7w   REG    8,1   102400  65540 /var/log/syslog
+  tail     2456 student   3r   REG    8,1   102400  65540 /var/log/syslog
+
+OBSERVATIONS:
+  1. 'lsof' (List Open Files) shows every file, socket, pipe, or
+     device currently opened by any process on the system.
+  2. File descriptors 0, 1, and 2 for bash point to /dev/pts/0
+     (the terminal), meaning stdin, stdout, and stderr are all
+     connected to the interactive terminal session.
+  3. 'mem' type entries are memory-mapped files – shared libraries
+     like libc.so.6 are loaded into process memory for efficiency.
+  4. The 'w' flag in rsyslogd's FD column means it has /var/log/syslog
+     open for writing, which is the logging daemon's job.
+  5. If an application fails to log, lsof can reveal whether the
+     log file is open, locked, or in use by another process.
+
+-----------------------------------------------------------
+SECTION 2: FILE DESCRIPTOR OBSERVATIONS
+-----------------------------------------------------------
+
+STANDARD FILE DESCRIPTORS:
+  ┌────┬─────────┬──────────────┬─────────────────────────────────────┐
+  │ FD │ Name    │ Default      │ Description                         │
+  ├────┼─────────┼──────────────┼─────────────────────────────────────┤
+  │  0 │ stdin   │ /dev/pts/0   │ Standard Input  (keyboard)          │
+  │  1 │ stdout  │ /dev/pts/0   │ Standard Output (terminal screen)   │
+  │  2 │ stderr  │ /dev/pts/0   │ Standard Error  (terminal screen)   │
+  └────┴─────────┴──────────────┴─────────────────────────────────────┘
+
+COMMANDS TO EXAMINE FILE DESCRIPTORS:
+  $ ls -la /proc/$$/fd          ← View all FDs for current process
+  $ ls -la /proc/1234/fd        ← View FDs for specific PID
+
+OUTPUT:
+  lrwx------ 1 student student 64 Jun 15 /proc/1234/fd/0 -> /dev/pts/0
+  lrwx------ 1 student student 64 Jun 15 /proc/1234/fd/1 -> /dev/pts/0
+  lrwx------ 1 student student 64 Jun 15 /proc/1234/fd/2 -> /dev/pts/0
+  lrwx------ 1 student student 64 Jun 15 /proc/1234/fd/255 -> /dev/pts/0
+
+OPENING A CUSTOM FILE DESCRIPTOR IN BASH:
+  $ exec 3> /tmp/mylog.txt      ← Open FD 3 for writing
+  $ echo "Custom log entry" >&3 ← Write to FD 3
+  $ exec 3>&-                   ← Close FD 3
+  $ cat /tmp/mylog.txt
+  Custom log entry
+
+OBSERVATIONS:
+  1. Linux tracks open files through the /proc/<pid>/fd directory,
+     where each file descriptor is a symbolic link to the actual file.
+  2. File descriptors 0, 1, and 2 are always reserved for stdin,
+     stdout, and stderr; custom FDs start from 3.
+  3. The 'exec 3>' syntax in bash opens a custom file descriptor
+     that can be used to write to specific files independently.
+  4. FD 255 (shown above) is used internally by bash for script
+     execution – this is normal bash behavior.
+  5. Understanding file descriptors is crucial for debugging logging
+     issues because a misconfigured FD means log messages get lost.
+
+-----------------------------------------------------------
+SECTION 3: OUTPUT REDIRECTION AND ERROR REDIRECTION RESULTS
+-----------------------------------------------------------
+
+COMMANDS AND EXPERIMENTS:
+
+  A. STDOUT REDIRECTION (>):
+     $ ls /home > output.txt          ← Redirect stdout to file
+     $ cat output.txt
+     student                          ← Only stdout captured
+
+  B. APPEND STDOUT (>>):
+     $ echo "New entry" >> output.txt ← Append to existing file
+     $ cat output.txt
+     student
+     New entry
+
+  C. STDERR REDIRECTION (2>):
+     $ ls /nonexistent 2> errors.txt  ← Redirect stderr to file
+     $ cat errors.txt
+     ls: cannot access '/nonexistent': No such file or directory
+
+  D. REDIRECT BOTH STDOUT AND STDERR:
+     $ ls /home /nonexistent > all_output.txt 2>&1
+     $ cat all_output.txt
+     ls: cannot access '/nonexistent': No such file or directory
+     /home:
+     student
+
+  E. DISCARD OUTPUT (Null Device):
+     $ ls /home > /dev/null           ← Discard stdout
+     $ ls /nonexistent 2> /dev/null   ← Discard errors silently
+
+  F. PIPE REDIRECTION (|):
+     $ ls -la | grep "^d"             ← Pipe to filter directories only
+     $ ls -la | wc -l                 ← Count files
+
+  G. INPUT REDIRECTION (<):
+     $ sort < unsorted.txt > sorted.txt
+
+  H. HERE DOCUMENT (<<):
+     $ cat << EOF > config.txt
+     > server=localhost
+     > port=8080
+     > EOF
+
+OBSERVATIONS:
+  1. '>' overwrites the file each run, while '>>' appends to it –
+     important distinction for log file management.
+  2. '2>&1' redirects stderr (FD 2) to wherever stdout (FD 1) is
+     currently pointing – both streams go to the same destination.
+  3. /dev/null is the "null device" – writing to it discards data
+     permanently; useful for suppressing unwanted output in scripts.
+  4. Pipes (|) connect stdout of one command to stdin of the next,
+     creating powerful command chains without temporary files.
+  5. For the logging issue: if the application uses '>' instead of
+     '>>', log entries are lost every restart; should use '>>' or
+     a proper logging library/daemon.
+
+-----------------------------------------------------------
+SECTION 4: RESOURCE LIMITS OBSERVED
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ ulimit -a                    ← Show all resource limits
+  $ ulimit -n                    ← Max open files
+  $ ulimit -u                    ← Max user processes
+  $ cat /proc/sys/fs/file-max    ← System-wide file limit
+
+OUTPUT (ulimit -a):
+  core file size          (blocks, -c) 0
+  data seg size           (kbytes, -d) unlimited
+  scheduling priority             (-e) 0
+  file size               (blocks, -f) unlimited
+  pending signals                 (-i) 15530
+  max locked memory       (kbytes, -l) 65536
+  max memory size         (kbytes, -m) unlimited
+  open files                      (-n) 1024
+  pipe size            (512 bytes, -p) 8
+  POSIX message queues     (bytes, -q) 819200
+  real-time priority              (-r) 0
+  stack size              (kbytes, -s) 8192
+  cpu time               (seconds, -t) unlimited
+  max user processes              (-u) 15530
+  virtual memory          (kbytes, -v) unlimited
+  file locks                      (-x) unlimited
+
+  $ cat /proc/sys/fs/file-max
+  2097152                         ← System can open ~2 million files
+
+CHANGING LIMITS:
+  $ ulimit -n 4096                ← Increase open file limit to 4096
+  $ ulimit -n                     ← Verify: now shows 4096
+
+OBSERVATIONS:
+  1. The default open file limit (ulimit -n) is 1024, meaning a
+     process can have at most 1024 files open simultaneously.
+  2. Applications with heavy logging or many network connections
+     can hit this limit, causing "Too many open files" errors –
+     a common cause of logging failures.
+  3. ulimit -u (15530) limits how many processes a user can spawn,
+     preventing fork bombs and resource exhaustion attacks.
+  4. System-wide limit /proc/sys/fs/file-max (2,097,152) is much
+     higher; per-user limits are set lower for security.
+  5. For production servers, increasing ulimit -n to 65536 or
+     higher is often necessary for high-traffic applications.
+     This is configured in /etc/security/limits.conf permanently.
+
+-----------------------------------------------------------
+SECTION 5: EXPLANATION OF HOW LINUX MANAGES FILE I/O
+-----------------------------------------------------------
+
+LINUX FILE I/O ARCHITECTURE:
+
+  ┌──────────────────────────────────────────────────────────┐
+  │                     User Space                           │
+  │  Application → C Library (fopen/fread) → System Calls   │
+  └────────────────────────┬─────────────────────────────────┘
+                           │ open(), read(), write(), close()
+  ┌────────────────────────▼─────────────────────────────────┐
+  │                    Kernel Space                          │
+  │  Virtual File System (VFS) → File System Driver         │
+  │  (ext4, NTFS, tmpfs, etc.)  → Block Device Layer        │
+  └────────────────────────┬─────────────────────────────────┘
+                           │
+  ┌────────────────────────▼─────────────────────────────────┐
+  │                    Hardware                              │
+  │           SSD / HDD / Network Storage                    │
+  └──────────────────────────────────────────────────────────┘
+
+KEY CONCEPTS:
+
+  1. VIRTUAL FILE SYSTEM (VFS):
+     Linux's VFS provides a unified interface for all filesystem
+     types. Whether reading from ext4, NTFS, or a network share,
+     the application uses the same system calls (read, write).
+
+  2. FILE DESCRIPTOR TABLE:
+     Each process has its own File Descriptor Table in the kernel.
+     When open() is called, the kernel returns an integer (FD)
+     that serves as an index into this table.
+
+  3. PAGE CACHE (BUFFER CACHE):
+     Linux caches disk data in RAM (page cache) to avoid repeated
+     slow disk reads. 'sync' forces dirty cache pages to disk.
+     This is why reads are fast but power loss can cause data loss.
+
+  4. SYSTEM CALL INTERFACE:
+     File I/O system calls: open() → read()/write() → close()
+     Each call transitions from user space to kernel space,
+     which has a performance cost (context switch).
+
+  5. I/O SCHEDULING:
+     The I/O scheduler (CFQ, Deadline, NOOP) orders disk requests
+     to minimize seek time. Commands like 'ionice' can prioritize
+     I/O for specific processes.
+
+  6. BUFFERED vs DIRECT I/O:
+     Default: Buffered I/O (data goes through page cache)
+     O_DIRECT flag: Bypasses cache for database applications
+     that manage their own caching.
+
+LOGGING ISSUE ROOT CAUSE ANALYSIS:
+  Common causes of application logging failures:
+  ├── Open file limit exceeded (ulimit -n)       → Increase limit
+  ├── Log file deleted while app is running      → Use lsof to find
+  ├── Disk full (/var/log is full)               → df -h to check
+  ├── Wrong file permissions on log directory    → chmod 755 /var/log/app
+  ├── Log file being written with > not >>       → Fix script
+  └── rsyslog/journald service not running       → systemctl restart rsyslog
+
+===========================================================
+END OF FILE ACCESS AND I/O INVESTIGATION REPORT
+===========================================================

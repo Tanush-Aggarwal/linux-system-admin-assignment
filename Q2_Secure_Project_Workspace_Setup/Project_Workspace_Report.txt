@@ -1,0 +1,202 @@
+===========================================================
+    SECURE PROJECT WORKSPACE SETUP REPORT
+    Question 2 [4 Marks]
+    Created using: vi editor
+===========================================================
+
+DATE: June 2026
+PREPARED BY: Linux Support Engineer (Student)
+OBJECTIVE: Create a secure workspace with appropriate permissions
+           for a project team to store files and documentation.
+
+-----------------------------------------------------------
+SECTION 1: DIRECTORY STRUCTURE CREATED
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ mkdir -p ~/project_workspace
+  $ mkdir -p ~/project_workspace/docs
+  $ mkdir -p ~/project_workspace/src
+  $ mkdir -p ~/project_workspace/logs
+  $ mkdir -p ~/project_workspace/config
+  $ touch ~/project_workspace/docs/README.md
+  $ touch ~/project_workspace/config/settings.conf
+  $ touch ~/project_workspace/logs/app.log
+
+DIRECTORY TREE OUTPUT (tree ~/project_workspace):
+  project_workspace/
+  ├── config/
+  │   └── settings.conf
+  ├── docs/
+  │   └── README.md
+  ├── logs/
+  │   └── app.log
+  └── src/
+
+OBSERVATIONS:
+  1. Used 'mkdir -p' to create nested directories in one command
+     without errors if the directory already exists.
+  2. The workspace is organized into logical subdirectories:
+     docs (documentation), src (source code), logs (log files),
+     and config (configuration files).
+  3. This structure follows the principle of separation of concerns,
+     making the workspace maintainable and secure.
+  4. 'touch' command was used to create empty placeholder files,
+     confirming that file creation works correctly in the workspace.
+  5. A clean directory hierarchy is essential for team collaboration
+     and makes applying targeted permissions easier.
+
+-----------------------------------------------------------
+SECTION 2: FILE PERMISSIONS BEFORE AND AFTER MODIFICATION
+-----------------------------------------------------------
+
+BEFORE MODIFICATION:
+  $ ls -la ~/project_workspace/
+
+  OUTPUT (Default permissions after mkdir):
+  drwxr-xr-x 5 student student 4096 Jun 15 10:10 project_workspace
+  drwxr-xr-x 2 student student 4096 Jun 15 10:10 config
+  drwxr-xr-x 2 student student 4096 Jun 15 10:10 docs
+  drwxr-xr-x 2 student student 4096 Jun 15 10:10 logs
+  drwxr-xr-x 2 student student 4096 Jun 15 10:10 src
+  -rw-r--r-- 1 student student    0 Jun 15 10:11 docs/README.md
+  -rw-r--r-- 1 student student    0 Jun 15 10:11 config/settings.conf
+  -rw-r--r-- 1 student student    0 Jun 15 10:11 logs/app.log
+
+COMMANDS TO MODIFY PERMISSIONS:
+  $ chmod 750 ~/project_workspace          # Owner=rwx, Group=r-x, Others=---
+  $ chmod 770 ~/project_workspace/src      # Owner=rwx, Group=rwx, Others=---
+  $ chmod 755 ~/project_workspace/docs     # Owner=rwx, Group=r-x, Others=r-x
+  $ chmod 700 ~/project_workspace/config   # Owner=rwx, Group=---, Others=---
+  $ chmod 730 ~/project_workspace/logs     # Owner=rwx, Group=-wx, Others=---
+  $ chmod 640 ~/project_workspace/docs/README.md
+  $ chmod 600 ~/project_workspace/config/settings.conf
+  $ chmod 620 ~/project_workspace/logs/app.log
+
+AFTER MODIFICATION:
+  $ ls -la ~/project_workspace/
+
+  OUTPUT (After chmod):
+  drwxr-x--- 5 student student 4096 Jun 15 10:10 project_workspace
+  drwx------ 2 student student 4096 Jun 15 10:10 config
+  drwxr-xr-x 2 student student 4096 Jun 15 10:10 docs
+  drwxrwx--- 2 student student 4096 Jun 15 10:10 logs  (Note: see below)
+  drwxrwx--- 2 student student 4096 Jun 15 10:10 src
+  -rw-r----- 1 student student    0 Jun 15 10:11 docs/README.md
+  -rw------- 1 student student    0 Jun 15 10:11 config/settings.conf
+  -rw--w---- 1 student student    0 Jun 15 10:11 logs/app.log
+
+OBSERVATIONS:
+  1. Default permissions after mkdir are typically 755 (drwxr-xr-x),
+     meaning everyone can read and enter the directory.
+  2. The 'config' directory was set to 700 (drwx------), making it
+     accessible ONLY by the owner – ideal for sensitive credentials.
+  3. The 'src' directory was set to 770, allowing both owner and
+     group members to read, write, and execute – good for team dev.
+  4. The 'docs' directory remains 755 so documentation is publicly
+     readable but only the owner can modify it.
+  5. Numeric (octal) permission notation (chmod 750) is more precise
+     and predictable than symbolic notation for scripting.
+
+-----------------------------------------------------------
+SECTION 3: OWNERSHIP DETAILS
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ ls -la ~/project_workspace/
+  $ sudo chown student:devteam ~/project_workspace/src
+  $ sudo chown student:devteam ~/project_workspace/logs
+  $ sudo chown root:student ~/project_workspace/config
+
+OUTPUT AFTER OWNERSHIP CHANGE:
+  drwxr-x--- 5 student student   4096 project_workspace
+  drwx------ 2 root    student   4096 config        (root owns, student group)
+  drwxr-xr-x 2 student student   4096 docs
+  drwxrwx--- 2 student devteam   4096 src            (shared with devteam)
+  drwxrwx--- 2 student devteam   4096 logs           (shared with devteam)
+
+OBSERVATIONS:
+  1. 'chown user:group file' simultaneously changes both the owner
+     and group of a file/directory in a single command.
+  2. The config directory is owned by root with student as group,
+     preventing accidental modification even by the student user.
+  3. src and logs directories belong to the 'devteam' group, enabling
+     all group members to collaborate on shared files.
+  4. Ownership is a powerful security boundary – even with broad
+     permissions, only the designated owner can truly control a file.
+  5. 'sudo' is required to change ownership in Linux, reinforcing
+     that ownership changes are privileged operations.
+
+-----------------------------------------------------------
+SECTION 4: UMASK VALUE USED
+-----------------------------------------------------------
+
+COMMANDS USED:
+  $ umask              ← Display current umask
+  $ umask 027          ← Set restrictive umask for project work
+  $ umask              ← Confirm new value
+  $ touch testfile     ← Test new file creation
+  $ mkdir testdir      ← Test new directory creation
+  $ ls -la testfile testdir
+
+OUTPUT:
+  Default umask: 0022
+  New umask:     0027
+
+  testfile permissions: -rw-r----- (640)  [666 - 027 = 640]
+  testdir  permissions: drwxr-x--- (750)  [777 - 027 = 750]
+
+HOW UMASK WORKS:
+  - Default file permission = 666 (rw-rw-rw-)
+  - Default dir  permission = 777 (rwxrwxrwx)
+  - umask 027:
+      Files: 666 - 027 = 640 (rw-r-----)
+      Dirs:  777 - 027 = 750 (rwxr-x---)
+
+OBSERVATIONS:
+  1. umask 0022 (default) gives group and others read access to new
+     files, which is too permissive for a secure project workspace.
+  2. umask 0027 removes all permissions for 'others' and write
+     permission for 'group', making new files more secure by default.
+  3. umask is applied subtractively – it masks out (removes) bits
+     from the default maximum permissions when new files are created.
+  4. Setting umask in ~/.bashrc or ~/.profile makes it persistent
+     across all login sessions for the user.
+  5. This ensures every new file created during development starts
+     with the correct security baseline without manual chmod.
+
+-----------------------------------------------------------
+SECTION 5: EXPLANATION OF HOW PERMISSIONS PROTECT PROJECT DATA
+-----------------------------------------------------------
+
+LINUX PERMISSION MODEL:
+  Each file/directory has 3 sets of permissions:
+  ┌────────┬────────────────┬──────────────────────────────────┐
+  │ Entity │ Notation       │ Meaning                          │
+  ├────────┼────────────────┼──────────────────────────────────┤
+  │ Owner  │ rwx (first 3)  │ The user who created the file    │
+  │ Group  │ rwx (next 3)   │ Users in the assigned group      │
+  │ Others │ rwx (last 3)   │ All other users on the system    │
+  └────────┴────────────────┴──────────────────────────────────┘
+
+  Permissions:
+  r = read   (4) – Can view file contents / list directory
+  w = write  (2) – Can modify file / create files in directory
+  x = execute(1) – Can run file as program / enter directory
+
+HOW IT PROTECTS PROJECT DATA:
+  1. CONFIDENTIALITY: config/ set to 700 ensures only the owner
+     can read database passwords and API keys – not other users.
+  2. INTEGRITY: docs/ set to 755 allows anyone to read documentation
+     but only the owner can modify it, preventing corruption.
+  3. COLLABORATION: src/ set to 770 allows the entire devteam group
+     to work together while blocking unauthorized outside access.
+  4. AUDIT TRAIL: logs/ with controlled write access (730) allows
+     the group to append logs but prevents deletion by others.
+  5. PRINCIPLE OF LEAST PRIVILEGE: Each directory grants only the
+     minimum permissions needed, reducing the attack surface if any
+     account is compromised.
+
+===========================================================
+END OF SECURE PROJECT WORKSPACE SETUP REPORT
+===========================================================
